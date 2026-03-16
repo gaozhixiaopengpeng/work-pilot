@@ -163,14 +163,14 @@ worklog month --repo /path/to/project --lang en
 **常见流程：**
 
 ```bash
-git add .
+git add -A
 worklog commit
 ```
 
 交互行为说明（默认模式）：
 
 1. 工具会检测当前仓库的变更状态；
-2. 若只有未暂存变更，会询问你是否先执行 `git add .`；
+2. 若只有未暂存变更，会询问你是否先执行 `git add -A`；
 3. 根据最终的暂存区 diff 调用 AI 生成 commit message；
 4. 将生成的 message 展示给你确认；
 5. 你可以选择是否使用该 message 进行提交。
@@ -212,7 +212,7 @@ worklog commit
 - **单次提交，自动生成说明并提交：**
 
   ```bash
-  git add .
+  git add -A
   worklog commit
   ```
 
@@ -280,7 +280,7 @@ worklog day --repo https://github.com/user/project
 - **Q4：`worklog commit` 会不会自动提交我不想提交的内容？**  
   **A：**
   - 若你使用 `--staged`，只会基于暂存区内容生成并提交；
-  - 若未指定 `--staged/--work`，工具会提示你是否先 `git add .`；
+  - 若未指定 `--staged/--work`，工具会提示你是否先 `git add -A`；
   - 在真正执行 `git commit` 前，会先展示生成的 message，并询问是否确认提交；
   - 使用 `--no-commit` 或 `--work` 时，**不会执行提交**。
 

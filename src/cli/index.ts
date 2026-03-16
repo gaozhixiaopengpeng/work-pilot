@@ -278,7 +278,7 @@ program
         mode === 'auto' && hasUnstaged && !hasStaged;
       if (shouldAskAddFirst) {
         const addAnswer = await askLine(
-          '检测到未暂存变更，是否需要先执行 git add .? [Y/N] '
+          '检测到未暂存变更，是否需要先执行 git add -A? [Y/N] '
         );
         if (addAnswer.toLowerCase() === 'y' || addAnswer.toLowerCase() === 'yes') {
           try {
