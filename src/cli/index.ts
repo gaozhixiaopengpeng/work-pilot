@@ -199,6 +199,21 @@ function askLine(question: string): Promise<string> {
   });
 }
 
+function startLoading(message: string): () => void {
+  let stopped = false;
+  process.stdout.write(message);
+  const interval = setInterval(() => {
+    if (stopped) return;
+    process.stdout.write('.');
+  }, 500);
+  return () => {
+    if (stopped) return;
+    stopped = true;
+    clearInterval(interval);
+    process.stdout.write('\n');
+  };
+}
+
 program
   .command('commit')
   .description('根据 diff 用 AI 生成 commit message，确认后提交（需已暂存）')
@@ -260,14 +275,19 @@ program
             return;
           }
           let stagedMessage: string;
+          const stopLoading = startLoading(
+            '正在根据暂存区 diff 调用 AI 生成 commit message，可能需要数秒'
+          );
           try {
             stagedMessage = await generateCommitMessage(stagedDiff);
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
-            process.stderr.write('生成失败: ' + msg + '\n');
+            process.stderr.write('\n生成失败: ' + msg + '\n');
             process.exitCode = 1;
+            stopLoading();
             return;
           }
+          stopLoading();
           process.stdout.write('\n' + filterCommitMessageDisplay(stagedMessage) + '\n\n');
           const commitAnswer = await askLine(
             '是否使用上述 message 提交暂存区? [Y/N] '
@@ -311,14 +331,19 @@ program
         (mode === 'auto' && source === 'unstaged') || mode === 'unstaged';
       if (isUnstagedOnly) {
         let message: string;
+        const stopLoading = startLoading(
+          '正在根据未暂存 diff 调用 AI 生成 commit message，可能需要数秒'
+        );
         try {
           message = await generateCommitMessage(diff);
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
-          process.stderr.write('生成失败: ' + msg + '\n');
+          process.stderr.write('\n生成失败: ' + msg + '\n');
           process.exitCode = 1;
+          stopLoading();
           return;
         }
+        stopLoading();
         process.stdout.write('\n' + filterCommitMessageDisplay(message) + '\n\n');
         process.stdout.write(
           '当前 diff 来自未暂存变更，未执行提交。请先 git add 后使用 worklog commit\n'
@@ -327,14 +352,19 @@ program
       }
 
       let message: string;
+      const stopLoading = startLoading(
+        '正在根据 diff 调用 AI 生成 commit message，可能需要数秒'
+      );
       try {
         message = await generateCommitMessage(diff);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        process.stderr.write('生成失败: ' + msg + '\n');
+        process.stderr.write('\n生成失败: ' + msg + '\n');
         process.exitCode = 1;
+        stopLoading();
         return;
       }
+      stopLoading();
 
       process.stdout.write('\n' + filterCommitMessageDisplay(message) + '\n\n');
 
