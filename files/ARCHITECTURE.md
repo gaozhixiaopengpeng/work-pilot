@@ -9,9 +9,9 @@ Git Parser
  ↓
 Diff Analyzer
  ↓
-AI Summary
+AI Summary (language-aware)
  ↓
-Report Generator
+Report Generator (multi-language)
 ```
 
 ---
@@ -59,12 +59,15 @@ git diff
 ```
 commit
 diff
+language（可选，默认 zh-CN，对外始终保证生成中文版本）
 ```
 
 输出：
 
 ```
-工作总结
+按语言分组的工作总结内容：
+- base：中文（必选，标题 + 内容）
+- extra：其他语言（如英文），与中文语义对齐
 ```
 
 ---
@@ -77,6 +80,7 @@ diff
 日报
 周报
 Markdown
+多语言文本块（始终包含中文块，可选附加英文等）
 ```
 
 ---
