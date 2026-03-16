@@ -1,7 +1,10 @@
 /**
  * 格式化最终输出（stdout 用）
  */
-export function formatReportTitle(kind: 'today' | 'day' | 'week'): string {
+export function formatReportTitle(
+  kind: 'today' | 'day' | 'week' | 'month'
+): string {
+  if (kind === 'month') return '本月工作总结:';
   if (kind === 'week') return '本周工作总结:';
   return '今日工作总结:';
 }

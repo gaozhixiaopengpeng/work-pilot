@@ -6,6 +6,7 @@ Worklog 会自动读取你的 Git commit 和代码 diff，然后使用 AI 自动
 
 * 日报
 * 周报
+* 月报
 * 工作总结
 
 支持：
@@ -27,8 +28,8 @@ Worklog 会自动读取你的 Git commit 和代码 diff，然后使用 AI 自动
 
 * 📦 自动读取 Git commit
 * ✍️ 基于 diff 生成 commit message（确认后提交）
-* 🧠 AI 自动生成日报
-* 📅 支持日报 / 周报
+* 🧠 AI 自动生成日报 / 周报 / 月报
+* 📅 支持日报 / 周报 / 月报
 * 🖥 CLI 命令行使用
 * 🔒 支持企业内网 GitLab
 * ⚡ 1 秒生成工作总结
@@ -91,6 +92,12 @@ worklog day --date 2026-03-10
 
 ```bash
 worklog week
+```
+
+生成本月工作月报
+
+```bash
+worklog month
 ```
 
 根据 diff 生成 commit message（确认后提交）

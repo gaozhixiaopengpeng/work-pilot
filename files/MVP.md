@@ -8,7 +8,7 @@
 1. 获取 Git commit
 2. 获取 commit diff
 3. **（提交前）** 基于 diff 由 AI 生成 commit message，用户确认后执行 `git commit`
-4. AI 生成日报 / 周报（基于已提交 commit + diff）
+4. AI 生成日报 / 周报 / 月报（基于已提交 commit + diff）
 5. CLI 命令调用
 
 **端到端流程（与 README 一致）：**

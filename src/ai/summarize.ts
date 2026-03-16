@@ -56,7 +56,7 @@ function missingKeyMessage(provider: AiProvider): string {
  * 从 prompts 目录加载模板（不读取 Git）
  */
 async function loadPrompt(
-  name: 'daily' | 'weekly',
+  name: 'daily' | 'weekly' | 'monthly',
   commitList: string,
   diffBlock: string
 ): Promise<string> {
@@ -126,7 +126,7 @@ export async function generateCommitMessage(diffBlock: string): Promise<string> 
  * 提供方由 WORKLOG_PROVIDER 决定，默认 openai；可选 deepseek。
  */
 export async function summarize(
-  promptName: 'daily' | 'weekly',
+  promptName: 'daily' | 'weekly' | 'monthly',
   commitList: string,
   diffBlock: string
 ): Promise<string> {
