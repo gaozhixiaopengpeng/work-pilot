@@ -122,6 +122,7 @@ async function runReport(
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (
+      msg.includes('LOGPILOT_API_KEY') ||
       msg.includes('WORKLOG_API_KEY') ||
       msg.includes('OPENAI_API_KEY') ||
       msg.includes('DEEPSEEK_API_KEY')
@@ -141,13 +142,13 @@ async function runReport(
 
 const program = new Command();
 program
-  .name('worklog')
+  .name('logpilot')
   .description('根据 Git commit 与 diff 用 AI 生成工作日报/周报/月报')
   .version('0.1.0');
 
 function applyProvider(provider?: string): void {
   if (provider) {
-    process.env.WORKLOG_PROVIDER = provider;
+    process.env.LOGPILOT_PROVIDER = provider;
   }
 }
 
@@ -339,7 +340,7 @@ program
         if (mode === 'staged' && hasUnstaged && !hasStaged) {
           process.stderr.write(
             '当前没有任何暂存的改动，但检测到未暂存变更。\n' +
-              '请先使用 git add 将需要提交的改动暂存后，再运行 worklog commit --staged，\n' +
+              '请先使用 git add 将需要提交的改动暂存后，再运行 logpilot commit --staged，\n' +
               '或去掉 --staged，仅基于工作区改动生成提交信息（不会自动提交）。\n'
           );
         } else {
@@ -368,7 +369,7 @@ program
         stopLoading();
         process.stdout.write('\n' + filterCommitMessageDisplay(message) + '\n\n');
         process.stdout.write(
-          '当前 diff 来自未暂存变更，未执行提交。请先 git add 后使用 worklog commit\n'
+          '当前 diff 来自未暂存变更，未执行提交。请先 git add 后使用 logpilot commit\n'
         );
         return;
       }
@@ -394,7 +395,7 @@ program
       if (noCommit || source !== 'staged') {
         if (source !== 'staged') {
           process.stdout.write(
-            '当前 diff 来自未暂存变更，未执行提交。请先 git add 后使用 worklog commit\n'
+            '当前 diff 来自未暂存变更，未执行提交。请先 git add 后使用 logpilot commit\n'
           );
         } else {
           process.stdout.write('已使用 --no-commit，未执行提交。\n');

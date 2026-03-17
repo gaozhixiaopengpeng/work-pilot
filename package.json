@@ -1,10 +1,10 @@
 {
-  "name": "worklog",
+  "name": "logpilot",
   "version": "0.1.0",
   "description": "AI 自动生成 Git 工作日报的 CLI 工具",
   "type": "module",
   "bin": {
-    "worklog": "./dist/cli/index.js"
+    "logpilot": "./dist/cli/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -14,7 +14,7 @@
     "node": ">=18"
   },
   "keywords": [
-    "worklog",
+    "logpilot",
     "git",
     "daily-report",
     "cli",

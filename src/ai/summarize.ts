@@ -23,33 +23,40 @@ function resolveEndpoint(provider: AiProvider): {
 } {
   if (provider === 'deepseek') {
     const baseURL =
+      process.env.LOGPILOT_API_BASE ||
       process.env.WORKLOG_API_BASE ||
       process.env.OPENAI_API_BASE_URL ||
       'https://api.deepseek.com/v1';
     const apiKey =
       process.env.DEEPSEEK_API_KEY ||
+      process.env.LOGPILOT_API_KEY ||
       process.env.WORKLOG_API_KEY ||
       process.env.OPENAI_API_KEY;
-    const model = process.env.WORKLOG_MODEL || 'deepseek-chat';
+    const model =
+      process.env.LOGPILOT_MODEL || process.env.WORKLOG_MODEL || 'deepseek-chat';
     return { baseURL, apiKey, model };
   }
   const baseURL =
+    process.env.LOGPILOT_API_BASE ||
     process.env.WORKLOG_API_BASE ||
     process.env.OPENAI_API_BASE_URL ||
     'https://api.openai.com/v1';
   const apiKey =
-    process.env.WORKLOG_API_KEY || process.env.OPENAI_API_KEY;
-  const model = process.env.WORKLOG_MODEL || 'gpt-4o-mini';
+    process.env.LOGPILOT_API_KEY ||
+    process.env.WORKLOG_API_KEY ||
+    process.env.OPENAI_API_KEY;
+  const model =
+    process.env.LOGPILOT_MODEL || process.env.WORKLOG_MODEL || 'gpt-4o-mini';
   return { baseURL, apiKey, model };
 }
 
 function missingKeyMessage(provider: AiProvider): string {
   if (provider === 'deepseek') {
     return (
-      '请设置环境变量 DEEPSEEK_API_KEY（或 WORKLOG_API_KEY / OPENAI_API_KEY）后重试'
+      '请设置环境变量 DEEPSEEK_API_KEY（或 LOGPILOT_API_KEY / WORKLOG_API_KEY / OPENAI_API_KEY）后重试'
     );
   }
-  return '请设置环境变量 WORKLOG_API_KEY 或 OPENAI_API_KEY 后重试';
+  return '请设置环境变量 LOGPILOT_API_KEY / WORKLOG_API_KEY 或 OPENAI_API_KEY 后重试';
 }
 
 async function loadPrompt(
@@ -97,7 +104,9 @@ async function loadCommitPrompt(diffBlock: string): Promise<string> {
 }
 
 async function chatComplete(content: string, temperature = 0.4): Promise<string> {
-  const provider = normalizeProvider(process.env.WORKLOG_PROVIDER);
+  const provider = normalizeProvider(
+    process.env.LOGPILOT_PROVIDER || process.env.WORKLOG_PROVIDER
+  );
   const { baseURL, apiKey, model } = resolveEndpoint(provider);
   if (!apiKey) {
     throw new Error(missingKeyMessage(provider));
@@ -132,7 +141,7 @@ export async function generateCommitMessage(diffBlock: string): Promise<string> 
 
 /**
  * 调用 LLM 生成工作总结（不读取 Git）
- * 提供方由 WORKLOG_PROVIDER 决定，默认 openai；可选 deepseek。
+ * 提供方由 LOGPILOT_PROVIDER（兼容 WORKLOG_PROVIDER）决定，默认 openai；可选 deepseek。
  */
 export async function summarize(
   promptName: 'daily' | 'weekly' | 'monthly',

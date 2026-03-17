@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 /**
- * 开发时: npm run build 后 npx worklog
- * 或: node --import tsx bin/worklog (若安装 tsx)
+ * 开发时: npm run build 后 npx logpilot
+ * 或: node --import tsx bin/logpilot (若安装 tsx)
  * 发布入口为 package.json bin -> dist/cli/index.js
  */
-import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
-const require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distCli = join(__dirname, '..', 'dist', 'cli', 'index.js');
 
@@ -18,3 +16,4 @@ try {
   console.error('请先执行 npm run build 生成 dist/cli/index.js');
   process.exit(1);
 }
+
