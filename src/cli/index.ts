@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import 'dotenv/config';
 import { createInterface } from 'readline';
 import { Command } from 'commander';
 import { simpleGit } from 'simple-git';

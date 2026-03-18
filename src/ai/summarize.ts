@@ -28,7 +28,7 @@ function detectProvider(): AiProvider {
       }
       // 两个 key 都配置但 AI_PROVIDER 为空，需要用户明确指定
       throw new Error(
-        '检测到同时配置 OPEN_AI_API_KEY 和 DEEPSEEK_API_KEY，但未设置 AI_PROVIDER，请在 .env 中显式设置 AI_PROVIDER=openai 或 AI_PROVIDER=deepseek'
+        '检测到同时配置 OPEN_AI_API_KEY 和 DEEPSEEK_API_KEY，但未设置 AI_PROVIDER，请通过环境变量显式设置 AI_PROVIDER=openai 或 AI_PROVIDER=deepseek'
       );
     }
   }
