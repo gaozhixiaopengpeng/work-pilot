@@ -49,6 +49,15 @@ export DEEPSEEK_API_KEY=sk-xxx
 export AI_PROVIDER=deepseek
 ```
 
+> 说明：`workpilot` 运行时会直接读取当前终端会话里的环境变量（`process.env`），不依赖你运行命令时所在的目录。
+>
+> 若你希望“新开终端也自动生效”，请把上面的 `export` 追加到你的 shell 配置文件里（不要放到项目目录里）：
+>
+> - bash：`~/.bash_profile` 或 `~/.bashrc`
+> - zsh：`~/.zshrc`
+>
+> 修改后要么重新打开终端，要么执行 `source ~/.bash_profile` / `source ~/.bashrc` / `source ~/.zshrc`（按你实际改的文件）。
+
 ### 3) 生成今日日报
 
 ```bash
@@ -113,9 +122,10 @@ workpilot commit
 | `DEEPSEEK_MODEL` | DeepSeek 模型名（可选） |
 
 自动推断规则：
+- 两个 Key 都未配置 -> 提示先配置 `OPEN_AI_API_KEY` 或 `DEEPSEEK_API_KEY`
 - 仅配置 `OPEN_AI_API_KEY` -> 使用 `openai`
 - 仅配置 `DEEPSEEK_API_KEY` -> 使用 `deepseek`
-- 两个 Key 同时配置或都未配置时，建议显式设置 `AI_PROVIDER`
+- 两个 Key 同时配置但未设置 `AI_PROVIDER` -> 提示配置 `AI_PROVIDER=openai` 或 `AI_PROVIDER=deepseek`
 
 ---
 

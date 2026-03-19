@@ -23,7 +23,7 @@ function detectProvider(): AiProvider {
       if (!hasOpenAiKey && hasDeepseekKey) return 'deepseek';
       if (!hasOpenAiKey && !hasDeepseekKey) {
         throw new Error(
-          '请至少设置环境变量 OPEN_AI_API_KEY 或 DEEPSEEK_API_KEY，或显式设置 AI_PROVIDER=openai/deepseek'
+          '请至少设置环境变量 OPEN_AI_API_KEY 或 DEEPSEEK_API_KEY 后重试'
         );
       }
       // 两个 key 都配置但 AI_PROVIDER 为空，需要用户明确指定

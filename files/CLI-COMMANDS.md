@@ -259,8 +259,8 @@ workpilot week --repo ../another-project
 
 - **Q2：为什么 AI 相关命令失败或提示 Key / 提供方错误？**  
   **A：** 请检查环境变量是否已正确配置：
-  - `OPEN_AI_API_KEY` / `DEEPSEEK_API_KEY` 是否至少设置了一个；
-  - 是否在同时配置两个 Key 时，显式设置了 `AI_PROVIDER=openai` 或 `AI_PROVIDER=deepseek`；
+  - `OPEN_AI_API_KEY` / `DEEPSEEK_API_KEY` 至少需要配置一个（两个都未配置会提示先配置 Key）；
+  - 如果同时配置了两个 Key，请显式设置 `AI_PROVIDER=openai` 或 `AI_PROVIDER=deepseek`；
   - 如有自定义网关，请确认 `OPEN_AI_BASE` 正确。
 
 - **Q3：报表是用什么语言生成的？能否只要英文？**  
