@@ -84,6 +84,12 @@ workpilot day
 # 今日日报
 workpilot day
 
+# 生成日报并写入剪贴板（一步完成）
+workpilot day copy
+
+# 先看完终端输出后再复制：接着执行（复制最近一次报表或 commit message 等缓存正文）
+workpilot copy
+
 # 指定日期日报
 workpilot day --date 2026-03-10
 
@@ -97,9 +103,14 @@ workpilot month
 git add -A
 workpilot commit
 
-# 将日报输出直接写入系统剪贴板（macOS / Windows / 常见 Linux 桌面）
+# 生成 commit message 并写入剪贴板
+workpilot commit copy
+
+# 管道：将日报标准输出写入剪贴板
 workpilot day | workpilot copy
 ```
+
+**`day` / `week` / `month` / `commit`** 均可在末尾加 **`copy`**（如 `workpilot week copy`、`workpilot commit --no-commit copy`），在终端输出后把**同一份可复制正文**写入剪贴板。单独执行 **`workpilot copy`** 时读取本机缓存（`$XDG_CACHE_HOME/workpilot/last-report.txt`，未设置时一般为 `~/.cache/workpilot/last-report.txt`）。
 
 ---
 

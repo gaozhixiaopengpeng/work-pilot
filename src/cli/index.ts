@@ -16,6 +16,10 @@ import {
   fallbackReport,
 } from '../report/generate.js';
 import { copyToClipboard } from '../utils/clipboard.js';
+import {
+  saveLastReportOutput,
+  readLastReportOutput,
+} from '../utils/last-output.js';
 
 function dayRange(dateStr: string): { since: string; until: string } {
   const parts = dateStr.split('-').map((p) => Number(p));
@@ -98,6 +102,7 @@ function filterCommitMessageDisplay(msg: string): string {
     .trim();
 }
 
+/** 返回与写入 stdout 一致的完整文本，并写入「上次报表」缓存供 copy 使用 */
 async function runReport(
   repo: string,
   since: string,
@@ -105,12 +110,16 @@ async function runReport(
   promptName: 'daily' | 'weekly' | 'monthly',
   titleKind: 'today' | 'day' | 'week' | 'month',
   language?: string
-): Promise<void> {
+): Promise<string> {
   const commits = await getCommits(repo, since, until);
   if (commits.length === 0) {
-    process.stdout.write(formatReportTitle(titleKind, language));
-    process.stdout.write('（所选时间范围内无 commit）\n');
-    return;
+    const title = formatReportTitle(titleKind, language);
+    const rest = '（所选时间范围内无 commit）\n';
+    const full = title + rest;
+    process.stdout.write(title);
+    process.stdout.write(rest);
+    await saveLastReportOutput(full);
+    return full;
   }
   const commitList = formatCommitList(commits);
   let report: string;
@@ -135,9 +144,52 @@ async function runReport(
     }
   }
   stopLoading();
-  process.stdout.write('\n');
-  process.stdout.write(formatReportTitle(titleKind, language) + '\n\n');
-  process.stdout.write(report + '\n');
+  const header = '\n' + formatReportTitle(titleKind, language) + '\n\n';
+  const body = report + '\n';
+  const full = header + body;
+  process.stdout.write(header);
+  process.stdout.write(body);
+  await saveLastReportOutput(full);
+  return full;
+}
+
+function assertOptionalCopyWord(
+  postAction: string | undefined,
+  command: string
+): boolean {
+  if (postAction === undefined) return true;
+  if (postAction === 'copy') return true;
+  process.stderr.write(
+    `未知参数 "${postAction}"；若需在生成后复制到剪贴板，请使用: ${cliName} ${command} copy\n`
+  );
+  process.exitCode = 1;
+  return false;
+}
+
+async function maybeCopyToClipboard(
+  postAction: string | undefined,
+  text: string
+): Promise<void> {
+  if (postAction !== 'copy') return;
+  try {
+    await copyToClipboard(text);
+    process.stderr.write('已复制到剪贴板。\n');
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    process.stderr.write('复制到剪贴板失败: ' + msg + '\n');
+    process.exitCode = 1;
+  }
+}
+
+/** 打印过滤后的 commit message、写入 copy 缓存，并按需复制到剪贴板 */
+async function publishCommitMessageForCopy(
+  raw: string,
+  postAction: string | undefined
+): Promise<void> {
+  const shown = filterCommitMessageDisplay(raw);
+  process.stdout.write('\n' + shown + '\n\n');
+  await saveLastReportOutput(shown);
+  await maybeCopyToClipboard(postAction, shown);
 }
 
 /** 全局安装时可为 workpilot 或 wp；本地 node 入口为 index，统一显示为 workpilot */
@@ -164,6 +216,7 @@ function applyProvider(provider?: string): void {
 program
   .command('day')
   .description('生成今日或指定日期日报')
+  .argument('[postAction]', '传入 copy 则在输出后同时写入系统剪贴板')
   .option('-d, --date <yyyy-mm-dd>', '日期（留空则为今天）')
   .option('-r, --repo <path>', '仓库路径', process.cwd())
   .option(
@@ -172,50 +225,92 @@ program
   )
   .option('--provider <name>', 'AI 提供方: openai（默认）| deepseek')
   .action(
-    async (opts: {
-      date?: string;
-      repo: string;
-      provider?: string;
-      lang?: string;
-    }) => {
+    async (
+      postAction: string | undefined,
+      opts: {
+        date?: string;
+        repo: string;
+        provider?: string;
+        lang?: string;
+      }
+    ) => {
+      if (!assertOptionalCopyWord(postAction, 'day')) return;
       applyProvider(opts.provider);
       const { since, until } = opts.date
         ? dayRange(opts.date)
         : todayRange();
       const titleKind = opts.date ? 'day' : 'today';
-      await runReport(opts.repo, since, until, 'daily', titleKind, opts.lang);
+      const text = await runReport(
+        opts.repo,
+        since,
+        until,
+        'daily',
+        titleKind,
+        opts.lang
+      );
+      await maybeCopyToClipboard(postAction, text);
     }
   );
 
 program
   .command('week')
   .description('生成本周工作周报')
+  .argument('[postAction]', '传入 copy 则在输出后同时写入系统剪贴板')
   .option('-r, --repo <path>', '仓库路径', process.cwd())
   .option(
     '--lang <code>',
     '输出语言代码（默认 zh 中文，如：en 表示仅英文）'
   )
   .option('--provider <name>', 'AI 提供方: openai（默认）| deepseek')
-  .action(async (opts: { repo: string; provider?: string; lang?: string }) => {
-    applyProvider(opts.provider);
-    const { since, until } = weekRange();
-    await runReport(opts.repo, since, until, 'weekly', 'week', opts.lang);
-  });
+  .action(
+    async (
+      postAction: string | undefined,
+      opts: { repo: string; provider?: string; lang?: string }
+    ) => {
+      if (!assertOptionalCopyWord(postAction, 'week')) return;
+      applyProvider(opts.provider);
+      const { since, until } = weekRange();
+      const text = await runReport(
+        opts.repo,
+        since,
+        until,
+        'weekly',
+        'week',
+        opts.lang
+      );
+      await maybeCopyToClipboard(postAction, text);
+    }
+  );
 
 program
   .command('month')
   .description('生成本月工作月报')
+  .argument('[postAction]', '传入 copy 则在输出后同时写入系统剪贴板')
   .option('-r, --repo <path>', '仓库路径', process.cwd())
   .option(
     '--lang <code>',
     '输出语言代码（默认 zh 中文，如：en 表示仅英文）'
   )
   .option('--provider <name>', 'AI 提供方: openai（默认）| deepseek')
-  .action(async (opts: { repo: string; provider?: string; lang?: string }) => {
-    applyProvider(opts.provider);
-    const { since, until } = monthRange();
-    await runReport(opts.repo, since, until, 'monthly', 'month', opts.lang);
-  });
+  .action(
+    async (
+      postAction: string | undefined,
+      opts: { repo: string; provider?: string; lang?: string }
+    ) => {
+      if (!assertOptionalCopyWord(postAction, 'month')) return;
+      applyProvider(opts.provider);
+      const { since, until } = monthRange();
+      const text = await runReport(
+        opts.repo,
+        since,
+        until,
+        'monthly',
+        'month',
+        opts.lang
+      );
+      await maybeCopyToClipboard(postAction, text);
+    }
+  );
 
 function askLine(question: string): Promise<string> {
   const rl = createInterface({
@@ -257,6 +352,7 @@ function startLoading(message: string): () => void {
 program
   .command('commit')
   .description('根据 diff 用 AI 生成 commit message，确认后提交（需已暂存）')
+  .argument('[postAction]', '传入 copy 则在展示 message 后同时写入系统剪贴板')
   .option('-r, --repo <path>', '仓库路径', process.cwd())
   .option(
     '--staged',
@@ -269,13 +365,17 @@ program
   .option('--no-commit', '只生成并打印 message，不提交')
   .option('--provider <name>', 'AI 提供方: openai（默认）| deepseek')
   .action(
-    async (opts: {
-      repo: string;
-      staged?: boolean;
-      work?: boolean;
-      commit?: boolean;
-      provider?: string;
-    }) => {
+    async (
+      postAction: string | undefined,
+      opts: {
+        repo: string;
+        staged?: boolean;
+        work?: boolean;
+        commit?: boolean;
+        provider?: string;
+      }
+    ) => {
+      if (!assertOptionalCopyWord(postAction, 'commit')) return;
       applyProvider(opts.provider);
       const repo = opts.repo;
       const git = simpleGit(repo);
@@ -328,7 +428,7 @@ program
             return;
           }
           stopLoading();
-          process.stdout.write('\n' + filterCommitMessageDisplay(stagedMessage) + '\n\n');
+          await publishCommitMessageForCopy(stagedMessage, postAction);
           const commitAnswer = await askLine(
             '是否使用上述 message 提交暂存区? [Y/N] '
           );
@@ -384,7 +484,7 @@ program
           return;
         }
         stopLoading();
-        process.stdout.write('\n' + filterCommitMessageDisplay(message) + '\n\n');
+        await publishCommitMessageForCopy(message, postAction);
         process.stdout.write(
           `当前 diff 来自未暂存变更，未执行提交。请先 git add 后使用 ${cliName} commit\n`
         );
@@ -406,7 +506,7 @@ program
       }
       stopLoading();
 
-      process.stdout.write('\n' + filterCommitMessageDisplay(message) + '\n\n');
+      await publishCommitMessageForCopy(message, postAction);
 
       const noCommit = opts.commit === false || opts.work;
       if (noCommit || source !== 'staged') {
@@ -440,7 +540,7 @@ program
 program
   .command('copy')
   .description(
-    '将标准输入或指定文本复制到系统剪贴板（可配合管道：workpilot day | workpilot copy）'
+    '复制到系统剪贴板：可用管道、--text，或复制最近一次报表 / commit message 等缓存正文'
   )
   .option('-t, --text <string>', '直接复制该字符串（无需管道）')
   .action(async (opts: { text?: string }) => {
@@ -448,15 +548,34 @@ program
     if (opts.text !== undefined) {
       content = opts.text;
     } else if (process.stdin.isTTY) {
-      process.stderr.write(
-        `用法: 将内容通过管道传入，或使用 --text。\n` +
-          `示例: ${cliName} day | ${cliName} copy\n` +
-          `      ${cliName} copy --text "一段说明"\n`
-      );
-      process.exitCode = 1;
-      return;
+      const last = await readLastReportOutput();
+      if (last !== null) {
+        content = last;
+      } else {
+        process.stderr.write(
+          `没有可复制的缓存内容。请先在同一台机器上执行 ${cliName} day / week / month / commit 生成输出，或使用：\n` +
+            `  ${cliName} day | ${cliName} copy\n` +
+            `  ${cliName} copy --text "一段说明"\n`
+        );
+        process.exitCode = 1;
+        return;
+      }
     } else {
       content = await readStdinUtf8();
+      if (content === '') {
+        const last = await readLastReportOutput();
+        if (last !== null) {
+          content = last;
+        } else {
+          process.stderr.write(
+            `标准输入为空，且没有已缓存内容。请使用：\n` +
+              `  ${cliName} day | ${cliName} copy\n` +
+              `  ${cliName} copy --text "一段说明"\n`
+          );
+          process.exitCode = 1;
+          return;
+        }
+      }
     }
     try {
       await copyToClipboard(content);

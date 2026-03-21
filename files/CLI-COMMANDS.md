@@ -42,7 +42,8 @@ node dist/cli/index.js day
 - **`workpilot week`**：生成**本周**工作周报
 - **`workpilot month`**：生成**本月**工作月报
 - **`workpilot commit`**：根据代码 diff 由 AI 生成 commit message，可选自动提交
-- **`workpilot copy`**：将**标准输入**或 `--text` 中的文本写入**系统剪贴板**（可与日报等命令管道配合）
+- **`workpilot copy`**：将文本写入**系统剪贴板**（管道、`--text`、或复制**最近一次**报表 / **commit message** 等缓存正文）
+- **`workpilot day copy` / `week copy` / `month copy` / `commit copy`**：在对应命令输出后**同时**写入剪贴板（`copy` 为命令末尾参数）
 
 所有报表类命令均支持：
 
@@ -210,6 +211,13 @@ workpilot commit
   workpilot commit --provider deepseek
   ```
 
+- **末尾 `copy`**：展示 AI 生成的 commit message 后，将**过滤后的 message 正文**写入剪贴板（与单独执行 `workpilot copy` 共用缓存）  
+  ```bash
+  workpilot commit copy
+  workpilot commit --no-commit copy
+  workpilot commit --work copy
+  ```
+
 ### 5.3 典型使用场景
 
 - **单次提交，自动生成说明并提交：**
@@ -241,23 +249,50 @@ workpilot commit
 
 **作用**：把一段文本写入系统剪贴板，便于粘贴到 IM、邮件或日报系统。
 
-**管道用法（常用）**：把前一个命令的标准输出直接复制进剪贴板：
+### 6.1 生成内容时顺带复制：`day copy` / `week copy` / `month copy` / `commit copy`
+
+在命令**末尾**加上单词 **`copy`**，会在终端照常打印输出后，再把**同一份可复制正文**写入剪贴板：
+
+```bash
+workpilot day copy
+workpilot week copy
+workpilot month copy
+workpilot day --date 2026-03-10 copy
+workpilot commit copy
+```
+
+> 若误写成 `workpilot day foo`（`foo` 不是 `copy`），工具会提示错误并说明正确用法。`commit` 同理。
+
+### 6.2 生成后再复制：单独执行 `workpilot copy`
+
+先执行 `workpilot day`（或 `week` / `month` / `commit`）看完输出后，**在同一台电脑、同一用户**下再执行：
+
+```bash
+workpilot copy
+```
+
+此时会复制**最近一次**成功写入缓存的正文（报表全文，或过滤后的 commit message；未生成过时会提示先运行上述命令）。
+
+### 6.3 管道与 `--text`
+
+把前一个命令的标准输出直接复制进剪贴板：
 
 ```bash
 workpilot day | workpilot copy
 workpilot week | workpilot copy
 ```
 
-**直接指定文本**：
+直接指定一段文字：
 
 ```bash
 workpilot copy --text "今日已完成接口联调"
 ```
 
-**说明**：
+### 6.4 说明
 
-- 成功时会在**标准错误**输出一行「已复制到剪贴板」，不会污染管道上游的纯文本输出。
+- 成功时会在**标准错误**输出一行「已复制到剪贴板」，不会污染管道里上游的纯文本输出。
 - **macOS** 使用 `pbcopy`；**Windows** 使用 PowerShell `Set-Clipboard`；**Linux** 依次尝试 `wl-copy`、`xclip`、`xsel`（需已安装其一）。
+- 缓存路径：环境变量 **`XDG_CACHE_HOME`** 下的 `workpilot/last-report.txt`；若未设置 `XDG_CACHE_HOME`，一般为 **`~/.cache/workpilot/last-report.txt`**。
 
 ---
 
