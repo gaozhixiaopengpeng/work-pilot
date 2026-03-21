@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 开发时: npm run build 后 npx workpilot
+ * 开发时: npm run build 后 npx workpilot（或 npx wp）
  * 或: node --import tsx bin/workpilot (若安装 tsx)
  * 发布入口为 package.json bin -> dist/cli/index.js
  */

@@ -37,6 +37,8 @@
 npm install -g workpilot
 ```
 
+安装后可在终端使用 **`workpilot`** 或其短命令 **`wp`**（二者等价，下文示例以 `workpilot` 为例）。
+
 ### 2) 配置 API Key（同时支持 openai / deepseek）
 
 ```bash

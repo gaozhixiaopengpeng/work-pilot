@@ -4,7 +4,8 @@
   "description": "AI-powered CLI for generating Git-based daily/weekly/monthly reports and commit messages.",
   "type": "module",
   "bin": {
-    "workpilot": "./dist/cli/index.js"
+    "workpilot": "./dist/cli/index.js",
+    "wp": "./dist/cli/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -15,6 +16,7 @@
   },
   "keywords": [
     "workpilot",
+    "wp",
     "work-report",
     "git",
     "daily-report",
