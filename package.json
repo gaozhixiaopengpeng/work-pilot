@@ -8,7 +8,7 @@
     "wp": "./dist/cli/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node ./scripts/sync-i18n-json.mjs",
     "prepublishOnly": "npm run build"
   },
   "engines": {

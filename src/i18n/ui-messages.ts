@@ -24,6 +24,11 @@ export function getUiMessages(): UiMessages {
   return cached;
 }
 
+/** 英文基线文案：用于运行时兜底，避免 key 缺失导致空输出 */
+export function getFallbackUiMessages(): UiMessages {
+  return en;
+}
+
 export function tmpl(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => vars[key] ?? `{${key}}`);
 }
