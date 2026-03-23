@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import { createInterface } from 'readline';
+import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { simpleGit } from 'simple-git';
 import {
@@ -27,12 +28,15 @@ function cliCommandName(): string {
 
 const cliName = cliCommandName();
 
+const require = createRequire(import.meta.url);
+const { version: pkgVersion } = require('../../package.json') as { version: string };
+
 const ui = getUiMessages();
 const program = new Command();
 program
   .name(cliName)
   .description(ui.programDescription)
-  .version('0.1.0');
+  .version(pkgVersion);
 
 function applyProvider(provider?: string): void {
   if (provider) {
