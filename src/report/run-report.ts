@@ -23,15 +23,16 @@ export async function runReport(
   const commits = await getCommits(repo, since, until);
   if (commits.length === 0) {
     const title = formatReportTitle(titleKind);
-    const rest = ui.reportNoCommitsInRange;
+    const rest =
+      typeof ui.reportNoCommitsInRange === 'string' ? ui.reportNoCommitsInRange : '';
     const full = title + rest;
     process.stdout.write(title);
-    process.stdout.write(rest);
+    if (rest) process.stdout.write(rest);
     await saveLastReportOutput(full);
     return full;
   }
   const commitList = formatCommitList(commits);
-  let report: string;
+  let report = '';
   const stopLoading = startLoading(ui.loadingReportGenerating);
   try {
     const diffBlock = await getDiffsForCommits(repo, commits);

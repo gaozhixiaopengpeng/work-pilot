@@ -11,8 +11,14 @@ export function lastReportCacheFile(): string {
 
 export async function saveLastReportOutput(text: string): Promise<void> {
   const file = lastReportCacheFile();
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, text, 'utf8');
+  try {
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, text, 'utf8');
+  } catch (e) {
+    // 缓存写失败不应影响主流程（例如某些环境对 $HOME/.cache 写权限受限）
+    const msg = e instanceof Error ? e.message : String(e);
+    process.stderr.write(`Warning: failed to write last report cache: ${msg}\n`);
+  }
 }
 
 /** 若无缓存或读失败则返回 null */
