@@ -11,6 +11,7 @@ import {
   type ReportPromptName,
   type ReportTitleKind,
 } from '../report/run-report.js';
+import { runDingtalkAssist } from './dingtalk-command.js';
 import {
   dayRange,
   monthRange,
@@ -19,7 +20,13 @@ import {
   type IsoTimeRange,
 } from '../utils/time-range.js';
 
-type ReportOpts = { repo: string; provider?: string; lang?: string };
+type ReportOpts = {
+  repo: string;
+  provider?: string;
+  lang?: string;
+  dingtalk?: boolean;
+  appUrl?: string;
+};
 
 function withReportArguments(cmd: Command, description: string): Command {
   return cmd.description(description).argument(
@@ -33,6 +40,8 @@ function withReportOptions(cmd: Command): Command {
   return cmd
     .option('-r, --repo <path>', ui.optRepoPath, process.cwd())
     .option('--lang <code>', ui.optLangHelp)
+    .option('--dingtalk', ui.optDingtalkAssist)
+    .option('--app-url <url>', ui.optDingtalkAppUrl)
     .option('--provider <name>', ui.optProvider);
 }
 
@@ -56,7 +65,7 @@ export function registerReportCommands(
         applyProvider(opts.provider);
         const { since, until } = opts.date ? dayRange(opts.date) : todayRange();
         const titleKind: ReportTitleKind = opts.date ? 'day' : 'today';
-        return runReport(
+        const fullText = await runReport(
           opts.repo,
           since,
           until,
@@ -64,6 +73,10 @@ export function registerReportCommands(
           titleKind,
           opts.lang ?? defaultReportLanguageCode()
         );
+        if (opts.dingtalk) {
+          await runDingtalkAssist(fullText, opts.appUrl);
+        }
+        return fullText;
       });
     }
   );
@@ -98,7 +111,7 @@ export function registerReportCommands(
       await runWithCopyPostAction(cliName, spec.name, postAction, async () => {
         applyProvider(opts.provider);
         const { since, until } = spec.range();
-        return runReport(
+        const fullText = await runReport(
           opts.repo,
           since,
           until,
@@ -106,6 +119,10 @@ export function registerReportCommands(
           spec.title,
           opts.lang ?? defaultReportLanguageCode()
         );
+        if (opts.dingtalk) {
+          await runDingtalkAssist(fullText, opts.appUrl);
+        }
+        return fullText;
       });
     });
   }

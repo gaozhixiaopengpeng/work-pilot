@@ -1,41 +1,75 @@
-import { createInterface } from 'readline';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { Command } from 'commander';
-import { defaultReportLanguageCode } from '../i18n/ui-locale.js';
 import { getUiMessages, tmpl } from '../i18n/ui-messages.js';
-import { runReport, type ReportTitleKind } from '../report/run-report.js';
 import { stripReportTitlePrefix } from '../report/strip-title-for-field.js';
-import { readLastReportOutput, saveLastReportOutput } from '../utils/last-output.js';
-import { dayRange, todayRange } from '../utils/time-range.js';
 import { copyToClipboard } from '../utils/clipboard.js';
-import { getCommits } from '../git/log.js';
-import { getWorkingDiff } from '../git/working-diff.js';
-import { summarize } from '../ai/summarize.js';
-import { formatReportTitle, fallbackReport } from '../report/generate.js';
-import { startLoading } from '../utils/loading.js';
-import {
-  dingtalkHeadless,
-  dingtalkLoginWaitMs,
-  dingtalkNavigationTimeoutMs,
-  fillDingtalkCompletedWork,
-  resolveDingtalkCompletedSelector,
-  resolveDingtalkReportUrl,
-} from '../platform/dingtalk/fill-dingtalk.js';
 
 const execFileAsync = promisify(execFile);
 
-function askLine(question: string): Promise<string> {
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.trim());
-    });
-  });
+async function activateMacApp(appName: string): Promise<void> {
+  await execFileAsync('osascript', ['-e', `tell application "${appName}" to activate`]);
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+async function clickMacAppLabel(appName: string, label: string): Promise<boolean> {
+  const script = `
+set _target to "${label}"
+tell application "System Events"
+  if UI elements enabled is false then
+    return "NO_ACCESS"
+  end if
+  tell process "${appName}"
+    set frontmost to true
+    repeat 12 times
+      try
+        set _all to entire contents of window 1
+        repeat with _el in _all
+          try
+            set _name to name of _el as text
+          on error
+            set _name to ""
+          end try
+          try
+            set _desc to description of _el as text
+          on error
+            set _desc to ""
+          end try
+          if _name contains _target or _desc contains _target then
+            try
+              perform action "AXPress" of _el
+            on error
+              try
+                click _el
+              on error
+              end try
+            end try
+            return "OK"
+          end if
+        end repeat
+      end try
+      delay 0.35
+    end repeat
+  end tell
+end tell
+return "NOT_FOUND"
+`;
+  try {
+    const { stdout } = await execFileAsync('osascript', ['-e', script]);
+    return stdout.trim() === 'OK';
+  } catch {
+    return false;
+  }
+}
+
+async function tryMacUiAssist(appName: string): Promise<void> {
+  // Best-effort automation: move from current tab to Workbench -> Daily.
+  await sleep(800);
+  await clickMacAppLabel(appName, '工作台');
+  await sleep(600);
+  await clickMacAppLabel(appName, '日报');
 }
 
 async function fallbackCopyAndPrint(text: string): Promise<void> {
@@ -50,201 +84,85 @@ async function fallbackCopyAndPrint(text: string): Promise<void> {
   }
 }
 
-async function openDingtalkDesktop(appUrl?: string): Promise<void> {
-  const targetUrl = appUrl?.trim() || process.env.WORKPILOT_DINGTALK_APP_URL?.trim();
+function buildDingtalkPageDeeplink(url: string): string {
+  return `dingtalk://dingtalkclient/page/link?url=${encodeURIComponent(url)}`;
+}
+
+async function openDingtalkDesktop(appUrls: string[]): Promise<void> {
+  const targets = appUrls.map((s) => s.trim()).filter(Boolean);
+  const deeplinks = targets.map((target) =>
+    target.startsWith('dingtalk://') ? target : buildDingtalkPageDeeplink(target)
+  );
   if (process.platform === 'darwin') {
-    let opened = false;
+    let openedAppName: string | null = null;
     for (const appName of ['DingTalk', '钉钉']) {
       try {
         await execFileAsync('open', ['-a', appName]);
-        opened = true;
+        openedAppName = appName;
         break;
       } catch {
         // try next app name
       }
     }
-    if (!opened) {
+    if (!openedAppName) {
       throw new Error('cannot open DingTalk app on macOS');
     }
-    if (targetUrl) {
-      await execFileAsync('open', [targetUrl]);
+    try {
+      await activateMacApp(openedAppName);
+    } catch {
+      // ignore activate failure; app has already been launched
+    }
+    for (const target of deeplinks) {
+      // App-only: open DingTalk deeplink only, never fallback to raw web URL.
+      await execFileAsync('open', [target]);
+    }
+    try {
+      await tryMacUiAssist(openedAppName);
+    } catch {
+      // ignore UI assist failures and keep manual guide fallback
     }
     return;
   }
 
   if (process.platform === 'win32') {
     await execFileAsync('cmd', ['/c', 'start', '', 'dingtalk://']);
+    for (const target of deeplinks) {
+      await execFileAsync('cmd', ['/c', 'start', '', target]);
+    }
     return;
   }
 
-  await execFileAsync('xdg-open', [targetUrl || 'dingtalk://']);
+  await execFileAsync('xdg-open', ['dingtalk://']);
+  for (const target of deeplinks) {
+    await execFileAsync('xdg-open', [target]);
+  }
 }
 
-async function buildDailyTextForDingtalk(
-  repo: string,
-  since: string,
-  until: string,
-  titleKind: ReportTitleKind,
-  language: string
-): Promise<string> {
+export async function runDingtalkAssist(fullText: string, appUrl?: string): Promise<void> {
   const ui = getUiMessages();
-  const commits = await getCommits(repo, since, until);
-  if (commits.length > 0) {
-    return runReport(repo, since, until, 'daily', titleKind, language);
-  }
-
-  // 兼容“尚未 commit，但已有暂存/工作区改动”的场景：直接基于 diff 生成可填充正文
-  const { diff, source } = await getWorkingDiff(repo, 'auto');
-  if (!diff.trim()) {
-    return runReport(repo, since, until, 'daily', titleKind, language);
-  }
-
-  const stopLoading = startLoading(ui.loadingReportGenerating);
-  let report = '';
+  const completed = stripReportTitlePrefix(fullText).trim() || fullText.trim();
+  let copied = false;
   try {
-    const commitList =
-      source === 'staged'
-        ? '(No committed changes in selected range; summarize from staged diff.)'
-        : '(No committed changes in selected range; summarize from working-tree diff.)';
-    report = await summarize('daily', commitList, diff, language);
+    await copyToClipboard(completed);
+    copied = true;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    if (
-      msg.includes('OPEN_AI_API_KEY') ||
-      msg.includes('DEEPSEEK_API_KEY') ||
-      msg.includes('AI_PROVIDER')
-    ) {
-      report = fallbackReport([
-        source === 'staged'
-          ? 'staged changes (no commit yet)'
-          : 'working-tree changes (no commit yet)',
-      ]);
-      process.stderr.write(ui.hintPrefix + msg + '\n');
-    } else {
-      stopLoading();
-      throw e;
-    }
+    process.stderr.write(tmpl(ui.msgDingtalkFallbackCopyFailed, { msg }));
   }
-  stopLoading();
-
-  const full = '\n' + formatReportTitle(titleKind) + '\n\n' + report + '\n';
-  process.stdout.write(full);
-  await saveLastReportOutput(full);
-  return full;
-}
-
-export function registerDingtalkCommand(
-  program: Command,
-  cliName: string,
-  applyProvider: (provider?: string) => void
-): void {
-  const ui = getUiMessages();
-  program
-    .command('dingtalk')
-    .description(ui.cmdDingtalkDescription)
-    .option('-r, --repo <path>', ui.optRepoPath, process.cwd())
-    .option('--reuse', ui.optDingtalkReuse)
-    .option('-d, --date <yyyy-mm-dd>', ui.optDate)
-    .option('--web', ui.optDingtalkWeb)
-    .option('--app-url <url>', ui.optDingtalkAppUrl)
-    .option('--url <url>', ui.optDingtalkUrl)
-    .option('--selector <css>', ui.optDingtalkSelector)
-    .option('--login-wait-ms <ms>', ui.optDingtalkLoginWaitMs)
-    .option('--nav-timeout-ms <ms>', ui.optDingtalkNavTimeoutMs)
-    .option('--lang <code>', ui.optLangHelp)
-    .option('--provider <name>', ui.optProvider)
-    .action(
-      async (opts: {
-        repo: string;
-        reuse?: boolean;
-        date?: string;
-        web?: boolean;
-        appUrl?: string;
-        url?: string;
-        selector?: string;
-        loginWaitMs?: string;
-        navTimeoutMs?: string;
-        lang?: string;
-        provider?: string;
-      }) => {
-        applyProvider(opts.provider);
-        let fullText: string;
-        if (opts.reuse) {
-          const cached = await readLastReportOutput();
-          if (cached === null) {
-            process.stderr.write(tmpl(ui.errDingtalkMissingCacheForReuse, { cliName }));
-            process.exitCode = 1;
-            return;
-          }
-          fullText = cached;
-        } else {
-          const { since, until } = opts.date ? dayRange(opts.date) : todayRange();
-          const titleKind: ReportTitleKind = opts.date ? 'day' : 'today';
-          fullText = await buildDailyTextForDingtalk(
-            opts.repo,
-            since,
-            until,
-            titleKind,
-            opts.lang ?? defaultReportLanguageCode()
-          );
-        }
-
-        const completed =
-          stripReportTitlePrefix(fullText).trim() || fullText.trim();
-
-        if (!opts.web) {
-          let copied = false;
-          try {
-            await copyToClipboard(completed);
-            copied = true;
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            process.stderr.write(tmpl(ui.msgDingtalkFallbackCopyFailed, { msg }));
-          }
-          try {
-            await openDingtalkDesktop(opts.appUrl);
-            process.stdout.write(
-              tmpl(ui.msgDingtalkAppLaunchOk, {
-                copied: copied ? ui.msgDingtalkCopiedShort : ui.msgDingtalkNotCopiedShort,
-              })
-            );
-            process.stdout.write(ui.msgDingtalkAppManualGuide);
-            return;
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            process.stderr.write(tmpl(ui.msgDingtalkAppOpenFailed, { msg }));
-            await fallbackCopyAndPrint(completed);
-            process.exitCode = 1;
-            return;
-          }
-        }
-
-        const url = resolveDingtalkReportUrl(opts.url);
-
-        const result = await fillDingtalkCompletedWork({
-          reportUrl: url,
-          completedWorkText: completed,
-          completedSelector: opts.selector ?? resolveDingtalkCompletedSelector(),
-          loginWaitMs: dingtalkLoginWaitMs(opts.loginWaitMs),
-          navigationTimeoutMs: dingtalkNavigationTimeoutMs(opts.navTimeoutMs),
-          headless: dingtalkHeadless(),
-          waitForEnterBeforeClose: async () => {
-            process.stdout.write(ui.msgDingtalkBrowserCheck);
-            await askLine(ui.msgDingtalkPressEnterWhenDone);
-          },
-        });
-
-        if (!result.ok) {
-          const detail = result.detail ? ` (${result.detail})` : '';
-          process.stderr.write(
-            tmpl(ui.msgDingtalkFillFailed, { reason: result.reason, detail })
-          );
-          await fallbackCopyAndPrint(completed);
-          process.exitCode = 1;
-          return;
-        }
-
-        process.stdout.write(ui.msgDingtalkFillOk);
-      }
+  try {
+    const envAppUrl = process.env.WORKPILOT_DINGTALK_APP_URL?.trim();
+    const candidateTargets = [appUrl?.trim() || '', envAppUrl || ''];
+    await openDingtalkDesktop(candidateTargets);
+    process.stdout.write(
+      tmpl(ui.msgDingtalkAppLaunchOk, {
+        copied: copied ? ui.msgDingtalkCopiedShort : ui.msgDingtalkNotCopiedShort,
+      })
     );
+    process.stdout.write(ui.msgDingtalkAppManualGuide);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    process.stderr.write(tmpl(ui.msgDingtalkAppOpenFailed, { msg }));
+    await fallbackCopyAndPrint(completed);
+    process.exitCode = 1;
+  }
 }
