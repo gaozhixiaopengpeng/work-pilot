@@ -16,6 +16,7 @@ import {
   registerCopyCommand,
 } from './copy-support.js';
 import { getUiMessages, tmpl } from '../i18n/ui-messages.js';
+import { registerDingtalkCommand } from './dingtalk-command.js';
 import { registerReportCommands } from './report-commands.js';
 import { generateCommitMessageWithCopy } from './commit-generate.js';
 
@@ -45,6 +46,7 @@ function applyProvider(provider?: string): void {
 }
 
 registerReportCommands(program, cliName, applyProvider);
+registerDingtalkCommand(program, cliName, applyProvider);
 
 function askLine(question: string): Promise<string> {
   const rl = createInterface({
