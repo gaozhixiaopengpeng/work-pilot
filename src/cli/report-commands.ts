@@ -33,7 +33,6 @@ type ReportOpts = {
   feishu?: boolean;
   wecom?: boolean;
   weixin?: boolean;
-  appUrl?: string;
 };
 
 type ReportAssistKind = 'day' | 'week' | 'month';
@@ -55,7 +54,6 @@ function withReportOptions(cmd: Command): Command {
     .option('--feishu', ui.optFeishuSupport)
     .option('--wecom', ui.optWecomSupport)
     .option('--weixin', ui.optWeixinCompat)
-    .option('--app-url <url>', ui.optDingtalkAppUrl)
     .option('--provider <name>', ui.optProvider);
 }
 
@@ -88,7 +86,7 @@ export function registerReportCommands(
           opts.lang ?? defaultReportLanguageCode()
         );
         if (opts.dingtalk || opts.dingding) {
-          await runDingtalkAssist(fullText, 'day', opts.appUrl);
+          await runDingtalkAssist(fullText, 'day');
         }
         if (opts.feishu) {
           await runFeishuAssist(fullText, 'day');
@@ -143,7 +141,7 @@ export function registerReportCommands(
           opts.lang ?? defaultReportLanguageCode()
         );
         if (opts.dingtalk || opts.dingding) {
-          await runDingtalkAssist(fullText, spec.assistKind, opts.appUrl);
+          await runDingtalkAssist(fullText, spec.assistKind);
         }
         if (opts.feishu) {
           await runFeishuAssist(fullText, spec.assistKind);

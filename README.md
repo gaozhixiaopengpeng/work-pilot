@@ -136,10 +136,10 @@ wp month --wecom # equivalent to wp month --weixin
 Notes:
 
 - `day`, `week`, and `month` are report subcommands.
-- `--dingtalk` works with `day` / `week` / `month` and launches DingTalk app assist after generation.
+- `--dingtalk` works with `day` / `week` / `month` and only opens DingTalk desktop app after generation (also tries to copy the report body to clipboard).
 - `dingding` is an alias of `dingtalk`.
-- `feishu` is the Feishu delivery capability (use `wp day|week|month --feishu`).
-- `wecom` is the WeCom delivery capability (use `wp day|week|month --wecom`).
+- `feishu` opens Feishu desktop app (use `wp day|week|month --feishu`; also tries to copy the report body to clipboard).
+- `wecom` opens WeCom desktop app (use `wp day|week|month --wecom`; also tries to copy the report body to clipboard).
 - `weixin` is an alias of `wecom`.
 
 ### Clipboard helpers

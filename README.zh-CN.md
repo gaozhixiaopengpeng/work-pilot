@@ -135,10 +135,10 @@ wp month --wecom # 等同于 wp month --weixin
 说明：
 
 - `day`、`week`、`month` 为报表子命令。
-- `--dingtalk` 可用于 `day` / `week` / `month`，会在生成后拉起钉钉客户端辅助发送。
+- `--dingtalk` 可用于 `day` / `week` / `month`，会在生成后仅拉起钉钉客户端（同时尝试复制正文到剪贴板）。
 - `dingding` 是 `dingtalk` 的兼容别名。
-- `feishu` 为飞书发送能力（支持 `wp day|week|month --feishu`）。
-- `wecom` 为企业微信发送能力（支持 `wp day|week|month --wecom`）。
+- `feishu` 为飞书客户端拉起能力（支持 `wp day|week|month --feishu`，同时尝试复制正文到剪贴板）。
+- `wecom` 为企业微信客户端拉起能力（支持 `wp day|week|month --wecom`，同时尝试复制正文到剪贴板）。
 - `weixin` 是 `wecom` 的兼容别名。
 
 ### 剪贴板
