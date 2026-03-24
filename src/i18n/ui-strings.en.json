@@ -73,10 +73,12 @@
   "msgDingtalkFillOk": "Browser closed.\n",
   "msgDingtalkFillFailed": "DingTalk fill failed ({reason}{detail}). Full text printed below; clipboard copy attempted.\n",
   "msgDingtalkAppLaunchOk": "DingTalk desktop app opened and report editor deeplink attempted ({copied}).\n",
-  "msgDingtalkAppManualGuide": "In DingTalk App follow: Workbench -> Daily -> report editor. Paste into \"Completed work\" and submit.\nIf Daily is missing, switch to an organization where Daily is enabled.\n",
+  "msgDingtalkAppManualGuide": "\nIn DingTalk App follow: Workbench -> Daily -> report editor ({copiedHint}). Paste into \"Completed work\" and submit. If Daily is missing, switch to an organization where Daily is enabled.\n",
   "msgDingtalkAppOpenFailed": "Failed to open DingTalk desktop app: {msg}\n",
   "msgDingtalkCopiedShort": "text copied to clipboard",
   "msgDingtalkNotCopiedShort": "copy failed; copy manually from terminal output",
+  "msgDingtalkCopiedHint": "report text is already in your clipboard",
+  "msgDingtalkNotCopiedHint": "clipboard copy failed; copy from terminal output first",
   "msgDingtalkFallbackCopied": "Copied \"Completed work\" text to clipboard.\n",
   "msgDingtalkFallbackCopyFailed": "Clipboard copy failed: {msg}\n"
 }

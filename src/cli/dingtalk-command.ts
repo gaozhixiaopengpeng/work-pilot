@@ -154,11 +154,10 @@ export async function runDingtalkAssist(fullText: string, appUrl?: string): Prom
     const candidateTargets = [appUrl?.trim() || '', envAppUrl || ''];
     await openDingtalkDesktop(candidateTargets);
     process.stdout.write(
-      tmpl(ui.msgDingtalkAppLaunchOk, {
-        copied: copied ? ui.msgDingtalkCopiedShort : ui.msgDingtalkNotCopiedShort,
+      tmpl(ui.msgDingtalkAppManualGuide, {
+        copiedHint: copied ? ui.msgDingtalkCopiedHint : ui.msgDingtalkNotCopiedHint,
       })
     );
-    process.stdout.write(ui.msgDingtalkAppManualGuide);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     process.stderr.write(tmpl(ui.msgDingtalkAppOpenFailed, { msg }));

@@ -73,10 +73,12 @@
   "msgDingtalkFillOk": "已关闭浏览器。\n",
   "msgDingtalkFillFailed": "钉钉页面填充失败（{reason}{detail}）。已输出可粘贴正文并尝试写入剪贴板。\n",
   "msgDingtalkAppLaunchOk": "已拉起钉钉客户端并尝试直达日报填写页（{copied}）。\n",
-  "msgDingtalkAppManualGuide": "请在钉钉 App 中按以下路径操作：工作台 -> 日报 -> 日报填写页面；在“今日完成工作/已完成工作”粘贴后提交。\n如未看到日报入口，请确认当前组织已开通日报功能。\n",
+  "msgDingtalkAppManualGuide": "\n请在钉钉 App 中按以下路径操作：工作台 -> 日报 -> 日报填写页面（{copiedHint}），在“今日完成工作/已完成工作”中直接粘贴后提交；如未看到日报入口，请切换到已开通日报功能的组织。\n",
   "msgDingtalkAppOpenFailed": "拉起钉钉客户端失败: {msg}\n",
   "msgDingtalkCopiedShort": "正文已复制到剪贴板",
   "msgDingtalkNotCopiedShort": "正文未复制成功，请从终端输出手动复制",
+  "msgDingtalkCopiedHint": "正文已复制到剪贴板，可直接粘贴使用",
+  "msgDingtalkNotCopiedHint": "正文复制失败，请先从终端输出手动复制",
   "msgDingtalkFallbackCopied": "已将「已完成工作」正文复制到剪贴板。\n",
   "msgDingtalkFallbackCopyFailed": "剪贴板写入失败: {msg}\n"
 }
