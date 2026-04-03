@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc && node ./scripts/sync-i18n-json.mjs",
+    "smoke": "node ./scripts/smoke-cli.mjs",
     "prepublishOnly": "npm run build"
   },
   "engines": {
